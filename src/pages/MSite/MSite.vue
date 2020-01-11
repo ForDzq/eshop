@@ -1,7 +1,7 @@
 <template>
   <div class="msite">
     <!--首页头部-->
-    <Header title="正在定位中">
+    <Header :title="address.name || '正在定位中'">
       <a class="header_search" slot="left">
         <i class="iconfont icon-sousuo"></i>
       </a>
@@ -13,104 +13,12 @@
     <nav class="msite_nav border-1px">
       <div class="swiper-container">
         <div class="swiper-wrapper">
-          <div class="swiper-slide">
-            <a href="javascript:" class="link_to_food">
+          <div class="swiper-slide" v-for="(category,index) in categorysArr" :key="index">
+            <a href="javascript:" class="link_to_food" v-for="(smaCategory) in category" :key="smaCategory.id">
               <div class="food_container">
-                <img src="./images/nav/1.jpg">
+                <img :src="imgBaseUrl + smaCategory.image_url">
               </div>
-              <span>甜品饮品</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/2.jpg">
-              </div>
-              <span>商超便利</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/3.jpg">
-              </div>
-              <span>美食</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/4.jpg">
-              </div>
-              <span>简餐</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/5.jpg">
-              </div>
-              <span>新店特惠</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/6.jpg">
-              </div>
-              <span>准时达</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/7.jpg">
-              </div>
-              <span>预订早餐</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/8.jpg">
-              </div>
-              <span>土豪推荐</span>
-            </a>
-          </div>
-          <div class="swiper-slide">
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/9.jpg">
-              </div>
-              <span>甜品饮品</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/10.jpg">
-              </div>
-              <span>商超便利</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/11.jpg">
-              </div>
-              <span>美食</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/12.jpg">
-              </div>
-              <span>简餐</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/13.jpg">
-              </div>
-              <span>新店特惠</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/14.jpg">
-              </div>
-              <span>准时达</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/1.jpg">
-              </div>
-              <span>预订早餐</span>
-            </a>
-            <a href="javascript:" class="link_to_food">
-              <div class="food_container">
-                <img src="./images/nav/2.jpg">
-              </div>
-              <span>土豪推荐</span>
+              <span>{{smaCategory.title}}</span>
             </a>
           </div>
         </div>
@@ -131,10 +39,53 @@
 
 <script>
   import ShopList from 'components/ShopList/ShopList'
+  import {mapState} from 'vuex'
+  import Swiper from 'swiper'
+  import 'swiper/dist/css/swiper.css'
   export default {
     name: 'MSite',
+    data () {
+      return {
+        imgBaseUrl: 'https://fuss10.elemecdn.com'
+      }
+    },
     components: {
       ShopList
+    },
+    computed: {
+      ...mapState({
+        address: state => state.msite.address,
+        categorys: state => state.msite.categorys
+      }),
+      categorysArr () {
+        let arr = []
+        let smaArr = []
+        const maxLength = 8
+        const {categorys} = this
+        categorys.forEach((item) => {
+          if(smaArr.length === 0) {
+            arr.push(smaArr)
+          }
+          smaArr.push(item)
+          if(smaArr.length === maxLength) {
+            smaArr = []
+          }
+        })
+        console.log(arr)
+        return arr
+      }
+    },
+    watch: {
+      categorys () {
+        this.$nextTick(() => {
+          new Swiper('.swiper-container',{
+            pagination: {
+              el: '.swiper-pagination'
+            },
+            loop: true
+          })
+        })
+      }
     }
   }
 </script>

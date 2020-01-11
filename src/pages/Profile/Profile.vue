@@ -2,17 +2,17 @@
   <section class="profile">
     <Header title="我的"></Header>
     <section class="profile-number">
-      <router-link to="/login" class="profile-link">
+      <router-link :to="user._id ? '/userinfo' : '/login'" class="profile-link">
         <div class="profile_image">
           <i class="iconfont icon-person"></i>
         </div>
         <div class="user-info">
-          <p class="user-info-top">登录/注册</p>
-          <p>
+          <p class="user-info-top" v-if="!user.phone">{{user.name || '登录/注册'}}</p>
+          <p v-if="!user.name">
             <span class="user-icon">
               <i class="iconfont icon-shouji icon-mobile"></i>
             </span>
-            <span class="icon-mobile-number">暂无绑定手机号</span>
+            <span class="icon-mobile-number">{{user.phone || '暂无绑定手机号'}}</span>
           </p>
         </div>
         <span class="arrow">
@@ -88,12 +88,28 @@
         </div>
       </a>
     </section>
+    <Button style="width: 100%;margin-top: 6px" type="danger" @click.prevent="logoutClick">退出登录</Button>
   </section>
 </template>
 
 <script>
+  import {Button,MessageBox} from 'mint-ui'
+  import {mapState} from 'vuex'
   export default {
-    name: 'Profile'
+    name: 'Profile',
+    components: {
+      Button
+    },
+    methods: {
+      logoutClick () {
+        MessageBox.confirm('确定退出登录吗').then(() => {
+          this.$store.dispatch('logout')
+        },() => {})
+      }
+    },
+    computed: {
+      ...mapState({user: state => state.user.user})
+    }
   }
 </script>
 

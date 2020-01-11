@@ -11,6 +11,11 @@
     name: 'App',
     components: {
       FooterGuide
+    },
+    mounted () {
+      this.$store.dispatch('autoLogin')
+      this.$store.dispatch('getAddress')
+      this.$store.dispatch('getCategorys')   
     }
   }
 </script>

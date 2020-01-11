@@ -4,48 +4,55 @@
       <div class="login_header">
         <h2 class="login_logo">硅谷外卖</h2>
         <div class="login_header_title">
-          <a href="javascript:;" class="on">短信登录</a>
-          <a href="javascript:;">密码登录</a>
+          <a href="javascript:;" :class="{on: isSmsLogin}" @click="changToSms">短信登录</a>
+          <a href="javascript:;" :class="{on: !isSmsLogin}" @click="changToPwd">密码登录</a>
         </div>
       </div>
       <div class="login_content">
         <form>
-          <div class="on">
+          <div :class="{on: isSmsLogin}">
             <section class="login_message">
-              <input type="tel" maxlength="11" placeholder="手机号">
-              <button disabled="disabled" class="get_verification" >获取验证码</button>
+              <input type="tel" maxlength="11" placeholder="手机号" v-model="phone">
+              <button 
+              :disabled="!isRightPhone || computedTime>0"
+              class="get_verification" 
+              :class="{on: isRightPhone}"
+              @click.prevent="getCode" 
+              >
+              {{computedTime>0 ? `获取验证码${computedTime}s` : '获取验证码'}}
+              </button>
             </section>
             <section class="login_verification">
-              <input type="tel" maxlength="8" placeholder="验证码">
+              <input type="tel" maxlength="8" placeholder="验证码" v-model="code">
             </section>
             <section class="login_hint">
               温馨提示：未注册硅谷外卖帐号的手机号，登录时将自动注册，且代表已同意
               <a href="javascript:;">《用户服务协议》</a>
             </section>
           </div>
-          <div>
+          <div :class="{on: !isSmsLogin}">
             <section>
               <section class="login_message">
-                <input type="tel" maxlength="11" placeholder="手机/邮箱/用户名">
+                <input type="tel" maxlength="11" placeholder="手机/邮箱/用户名" v-model="name">
               </section>
               <section class="login_verification">
-                <input type="tel" maxlength="8" placeholder="密码">
-                <div class="switch_button off">
+                <input :type="isShowPwd ? 'password' : 'text'" maxlength="8" placeholder="密码" v-model="pwd">
+                <div class="switch_button" @click="switchShowPassword" :class="isShowPwd ? 'off' : 'on'">
                   <div class="switch_circle"></div>
-                  <span class="switch_text">...</span>
+                  <span class="switch_text">abc</span>
                 </div>
               </section>
               <section class="login_message">
-                <input type="text" maxlength="11" placeholder="验证码">
-                <img class="get_verification" src="./images/captcha.svg" alt="captcha">
+                <input type="text" maxlength="11" placeholder="验证码" v-model="captcha">
+                <img class="get_verification" src="http://localhost:4000/captcha" alt="captcha" @click="updateSvg" ref="changSvg">
               </section>
             </section>
           </div>
-          <button class="login_submit">登录</button>
+          <button class="login_submit" @click="login">登录</button>
         </form>
         <a href="javascript:;" class="about_us">关于我们</a>
       </div>
-      <span href="javascript:" class="go_back" @click="$router.back()">
+      <span href="javascript:" class="go_back" @click="$router.replace('/profile')">
         <i class="iconfont icon-jiantou2"></i>
       </span>
     </div>
@@ -53,8 +60,92 @@
 </template>
 
 <script>
+  import {sendCode} from '../../api/index'
+  import {Toast} from 'mint-ui'
+  import {smsLogin,pwdLogin} from '../../api/index'
   export default {
-
+    name: 'Login',
+    data () {
+      return {
+        isSmsLogin: true,
+        computedTime: 0,
+        isShowPwd: true,
+        phone: '',
+        code: '',
+        name: '',
+        pwd: '',
+        captcha: ''
+      }
+    },
+    methods: {
+      changToSms () {
+        this.isSmsLogin = true
+      },
+      changToPwd () {
+        this.isSmsLogin = false
+      },
+      updateSvg () {
+        this.$refs.changSvg.src = 'http://localhost:4000/captcha?time='+Date.now()
+      },
+      switchShowPassword () {
+        this.isShowPwd = !this.isShowPwd
+      },
+      async getCode () {
+        this.computedTime = 10
+        const intervalId = setInterval(() => {
+          this.computedTime--
+          if(this.computedTime===0){
+            clearInterval(intervalId)
+          }
+        },1000)
+        let result = await sendCode(this.phone)
+        if(result.code === 0) {
+          Toast('发送成功')
+        }else{
+          Toast(result.msg)
+        }  
+      },
+      async login () {
+        let result
+        if(this.isSmsLogin) {
+          const {phone,code} = this
+          if(!this.isRightPhone) {
+            Toast('请输入正确手机号')
+            return
+          }else if(!/^\d{6}/.test(code)){
+            Toast('请输入正确的验证码')
+            return
+          }
+          result = await smsLogin({phone,code})
+        }else {
+          const {name,pwd,captcha} = this
+          if(!name) {
+            Toast('请输入用户名')
+            return
+          }else if(!pwd) {
+            Toast('请输入密码')
+            return
+          }else if(!captcha) {
+            Toast('请输入验证码')
+            return
+          }
+          result = await pwdLogin({name,pwd,captcha})
+        }
+        
+        if(result.code === 0) {
+          const userInfo = result.data
+          this.$store.dispatch('recordUser',userInfo)
+          this.$router.replace('/profile')
+        }else {
+          Toast(result.msg)
+        }
+      }
+    },
+    computed: {
+      isRightPhone () {
+        return  /^1\d{10}$/.test(this.phone)
+      }
+    }
   }
 </script>
 
@@ -119,6 +210,8 @@
                 color #ccc
                 font-size 14px
                 background transparent
+                &.on
+                  color: #000000
             .login_verification
               position relative
               margin-top 16px
@@ -146,6 +239,11 @@
                     color #ddd
                 &.on
                   background #02a774
+                  .switch_circle
+                    transform translateX(27px)
+                  .switch_text
+                    float left
+                    color #ddd
                 >.switch_circle
                 //transform translateX(27px)
                   position absolute
